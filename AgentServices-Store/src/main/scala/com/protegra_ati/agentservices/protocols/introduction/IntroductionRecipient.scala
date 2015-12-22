@@ -9,6 +9,14 @@ import com.protegra_ati.agentservices.store.extensions.StringExtensions._
 import java.util.UUID
 
 trait IntroductionRecipientT extends Serializable {
+
+  /**
+    * Define a logger used within the protocol.
+    * @note You can instantiate one with org.slf4j.LoggerFactory.getLogger(classOf[yourclass])
+    * @return
+    */
+  def logger: org.slf4j.Logger
+
   private val biCnxnsListLabel = "biCnxnsList(true)".toLabel
   private val profileDataLabel = "jsonBlob(true)".toLabel
 
@@ -17,23 +25,13 @@ trait IntroductionRecipientT extends Serializable {
     cnxns: Seq[PortableAgentCnxn],
     filters: Seq[CnxnCtxtLabel[String, String, String]]
   ): Unit = {
-    // println(
-//       (
-//         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//         + "\nIntroductionInitiator -- entering run method " 
-//         + "\nnode: " + node
-//         + "\ncnxns: " + cnxns
-//         + "\nfilters " + filters
-//         + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//       )
-//     )
     if (cnxns.size != 2) throw new Exception("invalid number of cnxns supplied")
 
     val protocolMgr = new ProtocolManager(node)
     val readCnxn = cnxns(0)
     val aliasCnxn = cnxns(1)
 
-    println(
+    logger.debug(
       (
         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
         + "\nIntroductionInitiator -- invoking listenGetIntroductionProfileRequest " 
@@ -46,24 +44,13 @@ trait IntroductionRecipientT extends Serializable {
 
     listenGetIntroductionProfileRequest(protocolMgr, readCnxn, aliasCnxn)
 
-    // println(
-//       (
-//         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//         + "\nIntroductionInitiator -- invoking listenIntroductionRequest " 
-//         + "\nnode: " + protocolMgr.node
-//         + "\nreadCnxn: " + readCnxn
-//         + "\naliasCnxn: " + aliasCnxn        
-//         + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//       )
-//     )
-
     listenIntroductionRequest(protocolMgr, readCnxn, aliasCnxn)
   }
 
   private def listenGetIntroductionProfileRequest(protocolMgr: ProtocolManager, readCnxn: PortableAgentCnxn, aliasCnxn: PortableAgentCnxn): Unit = {
     // listen for GetIntroductionProfileRequest message
     val getIntroProfileRqLabel = GetIntroductionProfileRequest.toLabel()
-    println(
+    logger.debug(
       (
         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
         + "\nIntroductionRecipient -- waiting for GetIntroductionProfileRequest " 
@@ -77,20 +64,9 @@ trait IntroductionRecipientT extends Serializable {
     protocolMgr.subscribeMessage(readCnxn, getIntroProfileRqLabel, {
       case gIPR@GetIntroductionProfileRequest(sessionId, correlationId, rspCnxn) => {
         // TODO: get data from aliasCnxn once it is being stored there
-        // println(
-//           (
-//             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//             + "\nIntroductionRecipient -- received GetIntroductionProfileRequest " 
-//             + "\nnode: " + protocolMgr.node
-//             + "\ncnxn: " + readCnxn
-//             + "\ngetIntroProfileRqLabel: " + getIntroProfileRqLabel
-//             + "\nGetIntroductionProfileRequest: " + gIPR
-//             + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//           )
-//         )
         val identityCnxn = PortableAgentCnxn(aliasCnxn.src, "identity", aliasCnxn.trgt)
 
-        println(
+        logger.debug(
           (
             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
             + "\nIntroductionRecipient -- reading profileData " 
@@ -104,19 +80,8 @@ trait IntroductionRecipientT extends Serializable {
         // get the profile data
         protocolMgr.read(identityCnxn, profileDataLabel, {
           case Some(mTT.RBoundAList(Some(mTT.Ground(PostedExpr(jsonBlob: String))), _)) => {
-            // println(
-//               (
-//                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                 + "\nIntroductionRecipient -- read profileData " 
-//                 + "\nnode: " + protocolMgr.node
-//                 + "\ncnxn: " + identityCnxn
-//                 + "\nprofileDataLabel: " + profileDataLabel
-//                 + "\nprofileData: " + jsonBlob
-//                 + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//               )
-//             )
             val getIntroProfileRsp = GetIntroductionProfileResponse(sessionId, correlationId, jsonBlob)
-            println(
+            logger.debug(
               (
                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                 + "\nIntroductionRecipient -- sending GetIntroductionProfileResponse " 
@@ -141,7 +106,7 @@ trait IntroductionRecipientT extends Serializable {
   private def listenIntroductionRequest(protocolMgr: ProtocolManager, readCnxn: PortableAgentCnxn, aliasCnxn: PortableAgentCnxn): Unit = {
     // listen for IntroductionRequest message
     val introRqLabel = IntroductionRequest.toLabel()
-    println(
+    logger.debug(
       (
         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
         + "\nIntroductionRecipient -- waiting for IntroductionRequest " 
@@ -154,7 +119,7 @@ trait IntroductionRecipientT extends Serializable {
 
     protocolMgr.subscribeMessage(readCnxn, introRqLabel, {
       case ir@IntroductionRequest(sessionId, correlationId, rspCnxn, message, profileData) => {
-        println(
+        logger.debug(
           (
             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
             + "\nIntroductionRecipient -- received IntroductionRequest " 
@@ -168,7 +133,7 @@ trait IntroductionRecipientT extends Serializable {
         )
 
         val introN = IntroductionNotification(sessionId, UUID.randomUUID.toString, PortableAgentBiCnxn(readCnxn, rspCnxn), message, profileData)
-        println(
+        logger.debug(
           (
             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
             + "\nIntroductionRecipient -- sending IntroductionNotification " 
@@ -186,7 +151,7 @@ trait IntroductionRecipientT extends Serializable {
         
         // listen for IntroductionConfirmation message
         val introConfirmationLabel = IntroductionConfirmation.toLabel(sessionId, introN.correlationId)
-        println(
+        logger.debug(
           (
             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
             + "\nIntroductionRecipient -- waiting for IntroductionConfirmation " 
@@ -199,7 +164,7 @@ trait IntroductionRecipientT extends Serializable {
         
         protocolMgr.getMessage(aliasCnxn, introConfirmationLabel, {
           case ic@IntroductionConfirmation(_, _, true) => {
-            println(
+            logger.debug(
               (
                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                 + "\nIntroductionRecipient -- received IntroductionConfirmation " 
@@ -213,7 +178,7 @@ trait IntroductionRecipientT extends Serializable {
             )
 
             val introRsp = IntroductionResponse(sessionId, correlationId, true, Some(UUID.randomUUID.toString))
-            println(
+            logger.debug(
               (
                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                 + "\nIntroductionRecipient -- sending IntroductionResponse " 
@@ -230,20 +195,10 @@ trait IntroductionRecipientT extends Serializable {
             
             // listen for Connect message
             val connectLabel = Connect.toLabel(sessionId, introRsp.connectCorrelationId.get)
-            // println(
-//               (
-//                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                 + "\nIntroductionRecipient -- waiting for Connect " 
-//                 + "\nnode: " + protocolMgr.node
-//                 + "\ncnxn: " + readCnxn
-//                 + "\nconnectLabel: " + connectLabel
-//                 + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//               )
-//             )
             
             protocolMgr.getMessage(readCnxn, connectLabel, {
               case c@Connect(_, _, false, Some(newBiCnxn)) => {
-                println(
+                logger.debug(
                   (
                     "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                     + "\nIntroductionRecipient -- received Connect " 
@@ -255,19 +210,8 @@ trait IntroductionRecipientT extends Serializable {
                   )
                 )
 
-                // println(
-//                   (
-//                     "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                     + "\nIntroductionRecipient -- retrieving list of biCnxns " 
-//                     + "\nnode: " + protocolMgr.node
-//                     + "\ncnxn: " + aliasCnxn
-//                     + "\nbiCnxnsListLabel: " + biCnxnsListLabel
-//                     + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                   )
-//                 )
-
                 def handleBiCnxnsList( prevBiCnxns : String ) : Unit = {
-                  println(
+                  logger.debug(
                     (
                       "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                       + "\nIntroductionRecipient -- received biCnxns list " 
@@ -287,24 +231,12 @@ trait IntroductionRecipientT extends Serializable {
                     // serialize biCnxn list
                     val newBiCnxnsStr = Serializer.serialize(newBiCnxns)
                     
-                    // println(
-//                       (
-//                         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                         + "\nIntroductionRecipient -- updating biCnxns list " 
-//                         + "\nnode: " + protocolMgr.node
-//                         + "\ncnxn: " + aliasCnxn
-//                         + "\nbiCnxnsListLabel: " + biCnxnsListLabel
-//                         + "\nnewBiCnxns: " + newBiCnxns
-//                         + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                       )
-//                     )
-                    
                     // save new list of biCnxns
                     protocolMgr.put(aliasCnxn, biCnxnsListLabel, mTT.Ground(PostedExpr(newBiCnxnsStr)))
                     
                     val connectN = ConnectNotification(sessionId, newBiCnxn, profileData)
-                    
-                    println(
+
+                    logger.debug(
                       (
                         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                         + "\nIntroductionRecipient -- sending ConnectNotification " 
@@ -321,7 +253,7 @@ trait IntroductionRecipientT extends Serializable {
                   }
                   catch {
                     case e : Throwable => {
-                      println( e )
+                      logger.error( "Encountered a problem when connecting an introduction...", e )
                     }
                   }
                 }
@@ -340,7 +272,7 @@ trait IntroductionRecipientT extends Serializable {
             })
           }
           case icAlt@IntroductionConfirmation(_, _, false) => {
-            println(
+            logger.debug(
               (
                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                 + "\nIntroductionRecipient -- received IntroductionConfirmation " 
@@ -353,17 +285,6 @@ trait IntroductionRecipientT extends Serializable {
               )
             )
             val introRsp = IntroductionResponse(sessionId, correlationId, false, None)
-            // println(
-//               (
-//                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                 + "\nIntroductionRecipient -- sending IntroductionResponse " 
-//                 + "\nnode: " + protocolMgr.node
-//                 + "\ncnxn: " + rspCnxn
-//                 + "\nintroRspLabel: " + introRsp.toLabel
-//                 + "\nIntroductionResponse: " + introRsp
-//                 + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//               )
-//             )
             
             // send IntroductionResponse message
             protocolMgr.putMessage(rspCnxn, introRsp)
@@ -375,6 +296,9 @@ trait IntroductionRecipientT extends Serializable {
 }
 
 class IntroductionRecipient extends IntroductionRecipientT {
+
+  val logger = org.slf4j.LoggerFactory.getLogger(classOf[IntroductionRecipient])
+
   override def run(
     kvdbNode: Being.AgentKVDBNode[PersistedKVDBNodeRequest, PersistedKVDBNodeResponse],
     cnxns: Seq[PortableAgentCnxn],

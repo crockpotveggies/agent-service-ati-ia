@@ -21,22 +21,19 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
   import com.biosimilarity.evaluator.distribution.utilities.DieselValueTrampoline._
   import com.protegra_ati.agentservices.store.extensions.StringExtensions._
 
+  /**
+    * Define a logger used within the protocol.
+    * @note You can instantiate one with org.slf4j.LoggerFactory.getLogger(classOf[yourclass])
+    * @return
+    */
+  def logger: org.slf4j.Logger
+
   def run(
     node : Being.AgentKVDBNode[PersistedKVDBNodeRequest, PersistedKVDBNodeResponse],
     cnxns : Seq[PortableAgentCnxn],
     filters : Seq[CnxnCtxtLabel[String, String, String]]
   ): Unit = {
-    BasicLogService.tweet(
-      (
-        "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-        + "\ncontentRecipient -- behavior instantiated and run method invoked " 
-        + "\nnode: " + node
-        + "\ncnxns: " + cnxns
-        + "\nfilters: " + filters
-        + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-      )
-    )
-    println(
+    logger.debug(
       (
         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
         + "\ncontentRecipient -- behavior instantiated and run method invoked " 
@@ -64,19 +61,10 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
           }
 
         for( ( agntCnxn, _ ) <- agntRecipientCnxnsRdWr ) {
-          BasicLogService.tweet(
+          logger.debug(
             (
               "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
               + "\ncontentRecipient -- waiting for content publication on: " 
-              + "\nagntCnxn: " + agntCnxn
-              + "\nlabel: " + PublishWithReo.toLabel
-              + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-            )
-          )
-          println(
-            (
-              "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-              + "\nclaimant -- waiting for initiate claim on: " 
               + "\nagntCnxn: " + agntCnxn
               + "\nlabel: " + PublishWithReo.toLabel
               + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
@@ -87,16 +75,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
             for( ePublishWithReo <- node.subscribe( agntCnxn )( PublishWithReo.toLabel ) ) {
               rsrc2V[ReputationMessage]( ePublishWithReo ) match {
                 case Left( PublishWithReo( sidPC, cidPC, p2cPC, cntntPC, reoPC ) ) => {
-                  BasicLogService.tweet(
-                    (
-                      "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                      + "\ncontentRecipient -- received PublishWithReo request: " + ePublishWithReo
-                      + "\ncnxn: " + agntCnxn
-                      + "\nlabel: " + PublishWithReo.toLabel
-                      + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                    )
-                  )
-                  println(
+                  logger.debug(
                     (
                       "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                       + "\ncontentRecipient -- received PublishWithReo request: " + ePublishWithReo
@@ -117,16 +96,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                     rsrc2V[ReputationMessage]( eHashedConnections ) match
                     {
                       case Left( HashedConnections( sidPC, cidPC, seqOfCnxnsPC ) ) => {
-                        BasicLogService.tweet(
-                          (
-                            "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                            + "\ncontentRecipient -- received HashedConnections request: " + eHashedConnections
-                            + "\ncnxn: " + agntCnxn
-                            + "\nlabel: " + HashedConnections.toLabel
-                            + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                          )
-                        )
-                        println(
+                        logger.debug(
                           (
                             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                             + "\ncontentRecipient -- received HashedConnections request: " + eHashedConnections
@@ -148,16 +118,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                           rsrc2V[ReputationMessage]( eIntersectionResult ) match
                           {
                             case Left( IntersectionResult( sidPC, cidPC, intersectCnxnsPC ) ) => {
-                              BasicLogService.tweet(
-                                (
-                                  "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                  + "\ncontentRecipient -- received IntersectionResult request: " + eIntersectionResult
-                                  + "\ncnxn: " + agntCnxn
-                                  + "\nlabel: " + IntersectionResult.toLabel
-                                  + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                )
-                              )
-                              println(
+                              logger.debug(
                                 (
                                   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                                   + "\ncontentRecipient -- received IntersectionResult request: " + eIntersectionResult
@@ -167,17 +128,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                                 )
                               )
                               if ( intersectionConnections != intersectCnxnsPC ) {
-                                BasicLogService.tweet(
-                                  (
-                                    "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                    + "\ncontentRecipient -- received IntersectionResult request: " + eIntersectionResult
-                                    + "\ncnxn: " + agntCnxn
-                                    + "\nlabel: " + IntersectionResult.toLabel
-                                    + "\nInvalid connection intersection"
-                                    + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                  )
-                                )
-                                println(
+                                logger.debug(
                                   (
                                     "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                                     + "\ncontentRecipient -- received IntersectionResult request: " + eIntersectionResult
@@ -194,14 +145,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                               )
                               val reoScore : Int = 1000; // placeholder for actual calculation
                               if ( reoScore != reoPC ) {
-                                BasicLogService.tweet(
-                                  (
-                                    "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                    + "\nInvalid reo!!"
-                                    + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                  )
-                                )
-                                println(
+                                logger.debug(
                                   (
                                     "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                                     + "\nInvalid reo!!"
@@ -212,14 +156,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                               // reo is good, continue to publish
                             }
                             case Right( true ) => {
-                              BasicLogService.tweet(
-                                (
-                                  "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                  + "\ncontentRecipient -- still waiting for IntersectionResult request"
-                                  + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                )
-                              )
-                              println(
+                              logger.debug(
                                 (
                                   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                                   + "\ncontentRecipient -- still waiting for IntersectionResult request"
@@ -231,15 +168,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                               // BUGBUG : lgm -- protect against strange and
                               // wondrous toString implementations (i.e. injection
                               // attack ) for eInitiateClaim
-                              BasicLogService.tweet(
-                                (
-                                  "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                  + "\ncontentRecipient -- while waiting for IntersectionResult request"
-                                  + "\nreceived unexpected protocol message : " + eIntersectionResult
-                                  + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                                )
-                              )
-                              println(
+                              logger.debug(
                                 (
                                   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                                   + "\ncontentRecipient -- while waiting for IntersectionResult request"
@@ -252,14 +181,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                         }
                       }
                       case Right( true ) => {
-                        BasicLogService.tweet(
-                          (
-                            "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                            + "\ncontentRecipient -- still waiting for HashedConnections request"
-                            + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                          )
-                        )
-                        println(
+                        logger.debug(
                           (
                             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                             + "\ncontentRecipient -- still waiting for HashedConnections request"
@@ -271,15 +193,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                         // BUGBUG : lgm -- protect against strange and
                         // wondrous toString implementations (i.e. injection
                         // attack ) for eInitiateClaim
-                        BasicLogService.tweet(
-                          (
-                            "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                            + "\ncontentRecipient -- while waiting for HashedConnections request"
-                            + "\nreceived unexpected protocol message : " + eHashedConnections
-                            + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                          )
-                        )
-                        println(
+                        logger.debug(
                           (
                             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                             + "\ncontentRecipient -- while waiting for HashedConnections request"
@@ -292,14 +206,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                   }
                 }
                 case Right( true ) => {
-                  BasicLogService.tweet(
-                    (
-                      "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                      + "\ncontentRecipient -- still waiting for PublishWithReo request"
-                      + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                    )
-                  )
-                  println(
+                  logger.debug(
                     (
                       "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                       + "\ncontentRecipient -- still waiting for PublishWithReo request"
@@ -311,15 +218,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
                   // BUGBUG : lgm -- protect against strange and
                   // wondrous toString implementations (i.e. injection
                   // attack ) for eInitiateClaim
-                  BasicLogService.tweet(
-                    (
-                      "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                      + "\ncontentRecipient -- while waiting for PublishWithReo request"
-                      + "\nreceived unexpected protocol message : " + ePublishWithReo
-                      + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                    )
-                  )
-                  println(
+                  logger.debug(
                     (
                       "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                       + "\ncontentRecipient -- while waiting for PublishWithReo request"
@@ -334,14 +233,7 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
         }         
       }
       case _ => {
-        BasicLogService.tweet(
-          (
-            "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-            + "\ncontentRecipient -- at least one cnxn expected : " + cnxns
-            + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-          )
-        )
-        println(
+        logger.debug(
           (
             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
             + "\ncontentRecipient -- at least one cnxn expected : " + cnxns
@@ -356,6 +248,9 @@ trait ContentRecipientBehaviorT extends ProtocolBehaviorT with Serializable {
 
 class ContentRecipientBehavior(
 ) extends ContentRecipientBehaviorT {
+
+  val logger = org.slf4j.LoggerFactory.getLogger(classOf[ContentRecipientBehavior])
+
   override def run(
     kvdbNode: Being.AgentKVDBNode[PersistedKVDBNodeRequest, PersistedKVDBNodeResponse],
     cnxns: Seq[PortableAgentCnxn],

@@ -7,27 +7,25 @@ import com.protegra_ati.agentservices.protocols.msgs._
 import java.util.UUID
 
 trait IntroductionInitiatorT extends Serializable {
+
+  /**
+    * Define a logger used within the protocol.
+    * @note You can instantiate one with org.slf4j.LoggerFactory.getLogger(classOf[yourclass])
+    * @return
+    */
+  def logger: org.slf4j.Logger
+
   def run(
     node: Being.AgentKVDBNode[PersistedKVDBNodeRequest, PersistedKVDBNodeResponse],
     cnxns: Seq[PortableAgentCnxn],
     filters: Seq[CnxnCtxtLabel[String, String, String]]
   ): Unit = {
-    // println(
-//       (
-//         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//         + "\nIntroductionInitiator -- entering run method " 
-//         + "\nnode: " + node
-//         + "\ncnxns: " + cnxns
-//         + "\nfilters " + filters
-//         + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//       )
-//     )
     if (cnxns.size != 1) throw new Exception("invalid number of cnxns supplied")
 
     val protocolMgr = new ProtocolManager(node)
     val aliasCnxn = cnxns(0)
 
-    println(
+    logger.debug(
       (
         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
         + "\nIntroductionInitiator -- invoking listenBeginIntroductionRequest " 
@@ -43,7 +41,7 @@ trait IntroductionInitiatorT extends Serializable {
   private def listenBeginIntroductionRequest(protocolMgr: ProtocolManager, aliasCnxn: PortableAgentCnxn): Unit = {
     // listen for BeginIntroductionRequest message
     val beginIntroRqLabel = BeginIntroductionRequest.toLabel()
-    println(
+    logger.debug(
       (
         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
         + "\nIntroductionInitiator -- waiting for BeginIntroductionRequest " 
@@ -55,7 +53,7 @@ trait IntroductionInitiatorT extends Serializable {
     )
     protocolMgr.subscribeMessage(aliasCnxn, beginIntroRqLabel, {
       case bIRRq@BeginIntroductionRequest(sessionId, PortableAgentBiCnxn(aReadCnxn, aWriteCnxn), PortableAgentBiCnxn(bReadCnxn, bWriteCnxn), aMessage, bMessage) => {
-        println(
+        logger.debug(
           (
             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
             + "\nIntroductionInitiator -- received BeginIntroductionRequest " 
@@ -68,7 +66,7 @@ trait IntroductionInitiatorT extends Serializable {
         )
         val aGetIntroProfileRq = GetIntroductionProfileRequest(sessionId, UUID.randomUUID.toString, aReadCnxn)
 
-        println(
+        logger.debug(
           (
             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
             + "\nIntroductionInitiator -- sending A's GetIntroductionProfileRequest " 
@@ -85,8 +83,8 @@ trait IntroductionInitiatorT extends Serializable {
         
         // listen for A's GetIntroductionProfileResponse message
         val aGetIntroProfileRspLabel = GetIntroductionProfileResponse.toLabel(sessionId, aGetIntroProfileRq.correlationId)
-        
-        println(
+
+        logger.debug(
           (
             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
             + "\nIntroductionInitiator -- waiting for A's GetIntroductionProfileResponse " 
@@ -98,7 +96,7 @@ trait IntroductionInitiatorT extends Serializable {
         )
         protocolMgr.getMessage(aReadCnxn, aGetIntroProfileRspLabel, {
           case aGIRPRsp@GetIntroductionProfileResponse(_, _, aProfileData) => {
-            println(
+            logger.debug(
               (
                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                 + "\nIntroductionInitiator -- received A's GetIntroductionProfileResponse " 
@@ -111,7 +109,7 @@ trait IntroductionInitiatorT extends Serializable {
               )
             )
             val bGetIntroProfileRq = GetIntroductionProfileRequest(sessionId, UUID.randomUUID.toString, bReadCnxn)
-            println(
+            logger.debug(
               (
                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                 + "\nIntroductionInitiator -- sending B's GetIntroductionProfileRequest " 
@@ -129,8 +127,8 @@ trait IntroductionInitiatorT extends Serializable {
             
             // listen for B's GetIntroductionProfileResponse message
             val bGetIntroProfileRspLabel = GetIntroductionProfileResponse.toLabel(sessionId, bGetIntroProfileRq.correlationId)
-            
-            println(
+
+            logger.debug(
               (
                 "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                 + "\nIntroductionInitiator -- waiting for B's GetIntroductionProfileResponse " 
@@ -142,7 +140,7 @@ trait IntroductionInitiatorT extends Serializable {
             )
             protocolMgr.getMessage(bReadCnxn, bGetIntroProfileRspLabel, {          
               case bGIRPRsp@GetIntroductionProfileResponse(_, _, bProfileData) => {
-                println(
+                logger.debug(
                   (
                     "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                     + "\nIntroductionInitiator -- received B's GetIntroductionProfileResponse " 
@@ -154,8 +152,8 @@ trait IntroductionInitiatorT extends Serializable {
                   )
                 )
                 val aIntroRq = IntroductionRequest(sessionId, UUID.randomUUID.toString, aReadCnxn, aMessage, bProfileData)
-                
-                println(
+
+                logger.debug(
                   (
                     "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                     + "\nIntroductionInitiator -- sending A's IntroductionRequest " 
@@ -172,7 +170,7 @@ trait IntroductionInitiatorT extends Serializable {
                 
                 // listen for A's IntroductionResponse message
                 val aIntroRspLabel = IntroductionResponse.toLabel(sessionId, aIntroRq.correlationId)
-                println(
+                logger.debug(
                   (
                     "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                     + "\nIntroductionInitiator -- waiting for A's IntroductionResponse " 
@@ -185,7 +183,7 @@ trait IntroductionInitiatorT extends Serializable {
                 
                 protocolMgr.getMessage(aReadCnxn, aIntroRspLabel, {
                   case aIR@IntroductionResponse(_, _, aAccepted, aConnectCorrelationId) => {
-                    println(
+                    logger.debug(
                       (
                         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                         + "\nIntroductionInitiator -- received A's IntroductionResponse " 
@@ -197,8 +195,8 @@ trait IntroductionInitiatorT extends Serializable {
                       )
                     )
                     val bIntroRq = IntroductionRequest(sessionId, UUID.randomUUID.toString, bReadCnxn, bMessage, aProfileData)
-                    
-                    println(
+
+                    logger.debug(
                       (
                         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                         + "\nIntroductionInitiator -- sending b's IntroductionRequest " 
@@ -215,7 +213,7 @@ trait IntroductionInitiatorT extends Serializable {
                     
                     // listen for B's IntroductionResponse message
                     val bIntroRspLabel = IntroductionResponse.toLabel(sessionId, bIntroRq.correlationId)
-                    println(
+                    logger.debug(
                       (
                         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                         + "\nIntroductionInitiator -- waiting for B's IntroductionResponse " 
@@ -228,7 +226,7 @@ trait IntroductionInitiatorT extends Serializable {
                     
                     protocolMgr.getMessage(bReadCnxn, bIntroRspLabel, {
                       case bIR@IntroductionResponse(_, _, bAccepted, bConnectCorrelationId) => {
-                        println(
+                        logger.debug(
                           (
                             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                             + "\nIntroductionInitiator -- received B's IntroductionResponse " 
@@ -239,9 +237,9 @@ trait IntroductionInitiatorT extends Serializable {
                             + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                           )
                         )
-                        
-                        
-                        println(
+
+
+                        logger.debug(
                           (
                             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                             + "\nIntroductionInitiator -- checking transaction status " 
@@ -271,7 +269,7 @@ trait IntroductionInitiatorT extends Serializable {
                           val aConnect = Connect(sessionId, aConnectCorrelationId.get, false, Some(aNewBiCnxn))
                           val bConnect = Connect(sessionId, bConnectCorrelationId.get, false, Some(bNewBiCnxn))
                           
-                          println(
+                          logger.debug(
                             (
                               "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                               + "\nIntroductionInitiator -- sending both Connect Msgs" 
@@ -290,16 +288,8 @@ trait IntroductionInitiatorT extends Serializable {
                           protocolMgr.putMessage(aWriteCnxn, aConnect)
                           protocolMgr.putMessage(bWriteCnxn, bConnect)
                         } else if (aAccepted) {
-                          // println(
-//                             (
-//                               "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                               + "\nIntroductionInitiator -- A committed; B didn't " 
-//                               + "\nnode: " + protocolMgr.node
-//                               + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                             )
-//                           )
                           val aConnect = Connect(sessionId, aConnectCorrelationId.get, true, None)
-                          println(
+                          logger.debug(
                             (
                               "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                               + "\nIntroductionInitiator -- alerting A's UI" 
@@ -314,16 +304,8 @@ trait IntroductionInitiatorT extends Serializable {
                           // send Connect message
                           protocolMgr.putMessage(aWriteCnxn, aConnect)
                         } else if (bAccepted) {
-                          // println(
-//                             (
-//                               "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                               + "\nIntroductionInitiator -- B committed; A didn't " 
-//                               + "\nnode: " + protocolMgr.node
-//                               + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//                             )
-//                           )
                           val bConnect = Connect(sessionId, bConnectCorrelationId.get, true, None)
-                          println(
+                          logger.debug(
                             (
                               "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                               + "\nIntroductionInitiator -- alerting B's UI" 
@@ -353,6 +335,9 @@ trait IntroductionInitiatorT extends Serializable {
 }
 
 class IntroductionInitiator extends IntroductionInitiatorT {
+
+  val logger = org.slf4j.LoggerFactory.getLogger(classOf[IntroductionInitiator])
+
   override def run(
     kvdbNode: Being.AgentKVDBNode[PersistedKVDBNodeRequest, PersistedKVDBNodeResponse],
     cnxns: Seq[PortableAgentCnxn],

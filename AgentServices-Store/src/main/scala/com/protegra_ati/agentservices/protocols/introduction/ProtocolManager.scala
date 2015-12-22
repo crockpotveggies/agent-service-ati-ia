@@ -9,6 +9,9 @@ import scala.util.continuations._
 
 class ProtocolManager(val node: Being.AgentKVDBNode[PersistedKVDBNodeRequest, PersistedKVDBNodeResponse]) extends Serializable {
   def this() = { this( null.asInstanceOf[Being.AgentKVDBNode[PersistedKVDBNodeRequest, PersistedKVDBNodeResponse]] ) }
+
+  private val logger = org.slf4j.LoggerFactory.getLogger(classOf[ProtocolManager])
+
   private def toAgentCnxn(cnxn: PortableAgentCnxn): acT.AgentCnxn = {
     acT.AgentCnxn(cnxn.src, cnxn.label, cnxn.trgt)
   }
@@ -46,7 +49,7 @@ class ProtocolManager(val node: Being.AgentKVDBNode[PersistedKVDBNodeRequest, Pe
       val agentCnxn = toAgentCnxn(cnxn)
 
       for (e <- node.get(agentCnxn)(filter)) {
-        println(
+        logger.debug(
           (
             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
             + "\nProtocolMgr -- getMessage | get returned " 
@@ -81,17 +84,6 @@ class ProtocolManager(val node: Being.AgentKVDBNode[PersistedKVDBNodeRequest, Pe
       val agentCnxn = toAgentCnxn(cnxn)
 
       for (e <- node.subscribe(agentCnxn)(filter)) {
-        // println(
-//           (
-//             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//             + "\nProtocolMgr -- subscribeMessage | subscribe returned " 
-//             + "\nnode: " + node
-//             + "\ncnxn: " + cnxn
-//             + "\nfilter: " + filter
-//             + "\ne: " + e
-//             + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//           )
-//         )
         e match {
           // colocated 
           case Some(mTT.Ground(PostedExpr(message: ProtocolMessage))) =>
@@ -127,17 +119,6 @@ class ProtocolManager(val node: Being.AgentKVDBNode[PersistedKVDBNodeRequest, Pe
       val agentCnxn = toAgentCnxn(cnxn)
 
       for (e <- node.get(agentCnxn)(filter)) {
-        // println(
-//           (
-//             "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//             + "\nProtocolMgr -- get | get returned " 
-//             + "\nnode: " + node
-//             + "\ncnxn: " + cnxn
-//             + "\nfilter: " + filter
-//             + "\ne: " + e
-//             + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-//           )
-//         )
         onResult(e)
       }
     }

@@ -21,22 +21,19 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
   import com.biosimilarity.evaluator.distribution.utilities.DieselValueTrampoline._
   import com.protegra_ati.agentservices.store.extensions.StringExtensions._
 
+  /**
+    * Define a logger used within the protocol.
+    * @note You can instantiate one with org.slf4j.LoggerFactory.getLogger(classOf[yourclass])
+    * @return
+    */
+  def logger: org.slf4j.Logger
+
   def run(
     node : Being.AgentKVDBNode[PersistedKVDBNodeRequest, PersistedKVDBNodeResponse],
     cnxns : Seq[PortableAgentCnxn],
     filters : Seq[CnxnCtxtLabel[String, String, String]]
   ): Unit = {
-    BasicLogService.tweet(
-      (
-        "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-        + "\nrelying party -- behavior instantiated and run method invoked " 
-        + "\nnode: " + node
-        + "\ncnxns: " + cnxns
-        + "\nfilters: " + filters
-        + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-      )
-    )
-    println(
+    logger.debug(
       (
         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
         + "\nrelying party -- behavior instantiated and run method invoked " 
@@ -65,16 +62,7 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
         }
       )
     for( ( cnxnRd, cnxnWr, pacCnxnRd ) <- agntCnxns ) {
-      BasicLogService.tweet(
-        (
-          "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-          + "\nrelying party -- waiting for open claim request on: " 
-          + "\ncnxn: " + cnxnRd
-          + "\nlabel: " + OpenClaim.toLabel
-          + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-        )
-      )
-      println(
+      logger.debug(
         (
           "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
           + "\nrelying party -- waiting for open claim request on: " 
@@ -86,17 +74,8 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
       reset {
         for( eOpenClaim <- node.subscribe( cnxnRd )( OpenClaim.toLabel ) ) {
           rsrc2V[VerificationMessage]( eOpenClaim ) match {
-            case Left( OpenClaim( sidOC, cidOC, vrfrOC, clmOC ) ) => { 
-              BasicLogService.tweet(
-                (
-                  "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                  + "\nrelying party -- received open claim request: " + eOpenClaim
-                  + "\ncnxn: " + cnxnRd
-                  + "\nlabel: " + OpenClaim.toLabel
-                  + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                )
-              )
-              println(
+            case Left( OpenClaim( sidOC, cidOC, vrfrOC, clmOC ) ) => {
+              logger.debug(
                 (
                   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                   + "\nrelying party -- received open claim request: " + eOpenClaim
@@ -113,16 +92,7 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
               val verifyRq = 
                 Verify( sidOC, cidOC, pacCnxnRd, clmOC )
 
-              BasicLogService.tweet(
-                (
-                  "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                  + "\nrelying party -- publishing verify request: " + verifyRq
-                  + "\n on cnxn: " + agntVrfrWr
-                  + "\n label: " + Verify.toLabel( sidOC )
-                  + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                )
-              )
-              println(
+              logger.debug(
                 (
                   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                   + "\nrelying party -- publishing verify request: " + verifyRq
@@ -137,16 +107,7 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
                 verifyRq
               )
 
-              BasicLogService.tweet(
-                (
-                  "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                  + "\nrelying party -- waiting for verification testimony on: " 
-                  + "\ncnxn: " + agntVrfrRd
-                  + "\nlabel: " + Verification.toLabel
-                  + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                )
-              )
-              println(
+              logger.debug(
                 (
                   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                   + "\nrelying party -- waiting for verification testimony on: " 
@@ -158,17 +119,8 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
 
               for( eVerification <- node.subscribe( agntVrfrRd )( Verification.toLabel ) ) {
                 rsrc2V[VerificationMessage]( eVerification ) match {
-                  case Left( Verification( sidV, cidV, clmntV, clmV, witV ) ) => { 
-                    BasicLogService.tweet(
-                      (
-                        "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                        + "\nrelying party -- received verification testimony: " + eVerification
-                        + "\ncnxn: " + agntVrfrRd
-                        + "\nlabel: " + Verification.toLabel
-                        + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                      )
-                    )
-                    println(
+                  case Left( Verification( sidV, cidV, clmntV, clmV, witV ) ) => {
+                    logger.debug(
                       (
                         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                         + "\nrelying party -- received verification testimony: " + eVerification
@@ -187,32 +139,15 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
                         VerificationNotification(
                           sidV, cidV, clmntV, clmV, witV
                         )
-                    
-                      BasicLogService.tweet(
-                        (
-                          "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                          + "\nrelying party -- verification testimony matches request parameters" 
-                          + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                        )
-                      )
-                      println(
-                        (
-                          "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                          + "\nrelying party -- verification testimony matches request parameters" 
-                          + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                        )
-                      )
 
-                      BasicLogService.tweet(
+                      logger.debug(
                         (
                           "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                          + "\nrelying party -- publishing close claim: " + closeClaim
-                          + "\n on cnxn: " + cnxnWr
-                          + "\n label: " + closeClaim
+                          + "\nrelying party -- verification testimony matches request parameters" 
                           + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                         )
                       )
-                      println(
+                      logger.debug(
                         (
                           "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                           + "\nrelying party -- publishing close claim: " + closeClaim
@@ -226,17 +161,8 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
                         CloseClaim.toLabel( sidOC ),
                         closeClaim
                       )
-                      
-                      BasicLogService.tweet(
-                        (
-                          "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                          + "\nrelying party -- publishing VerificationNotification: " + notification
-                          + "\n on cnxn: " + rp2GLoSWr
-                          + "\n label: " + VerificationNotification.toLabel( sidOC )
-                          + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                        )
-                      )
-                      println(
+
+                      logger.debug(
                         (
                           "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                           + "\nrelying party -- publishing VerificationNotification: " + notification
@@ -268,14 +194,7 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
                     }
                   }
                   case Right( true ) => {
-                    BasicLogService.tweet(
-                      (
-                        "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                        + "\nrelying party -- still waiting for verification from verifier"
-                        + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                      )
-                    )
-                    println(
+                    logger.debug(
                       (
                         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                         + "\nrelying party -- still waiting for verification from verifier"
@@ -284,14 +203,7 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
                     )
                   }
                   case _ => {
-                    BasicLogService.tweet(
-                      (
-                        "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                        + "\nrelying party -- unexpected protocol message : " + eVerification
-                        + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                      )
-                    )
-                    println(
+                    logger.debug(
                       (
                         "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                         + "\nrelying party -- unexpected protocol message : " + eVerification
@@ -310,14 +222,7 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
               }
             }
             case Right( true ) => {
-              BasicLogService.tweet(
-                (
-                  "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                  + "\nrelying party -- still waiting for open claim request from relying party"
-                  + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                )
-              )
-              println(
+              logger.debug(
                 (
                   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                   + "\nrelying party -- still waiting for open claim request from relying party"
@@ -326,14 +231,7 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
               )
             }
             case _ => {
-              BasicLogService.tweet(
-                (
-                  "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                  + "\nrelying party -- unexpected protocol message : " + eOpenClaim
-                  + "\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-                )
-              )
-              println(
+              logger.debug(
                 (
                   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
                   + "\nrelying party -- unexpected protocol message : " + eOpenClaim
@@ -357,6 +255,9 @@ trait RelyingPartyBehaviorT extends ProtocolBehaviorT with Serializable {
 
 class RelyingPartyBehavior(
 ) extends RelyingPartyBehaviorT {
+
+  val logger = org.slf4j.LoggerFactory.getLogger(classOf[RelyingPartyBehavior])
+
   override def run(
     kvdbNode: Being.AgentKVDBNode[PersistedKVDBNodeRequest, PersistedKVDBNodeResponse],
     cnxns: Seq[PortableAgentCnxn],
