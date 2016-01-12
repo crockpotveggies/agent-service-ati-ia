@@ -66,32 +66,40 @@ trait VenueInitiatorT extends ProtocolBehaviorT with Serializable {
       PortableAgentCnxn(portableAgentCnxn.trgt, portableAgentCnxn.label, portableAgentCnxn.src)
     }
 
-    for( lGCnxnsMsg <- node.get( agentCnxn )( lGCnxnsLabel ) ) {
-      rsrc2V[VenueMessage]( lGCnxnsMsg ) match { // connections label is going to be found through pattern matching on the cnxns
-        case Left( VenueCnxns( _, _, lGTrgtCnxns, lGSrcCnxns ) ) => {
-          for( cnxnTrgt <- lGTrgtCnxns ) {
-            // need to convert this to the type of connection required by the parameter
-            val agentCnxnT =
-              acT.AgentCnxn( cnxnTrgt.src, cnxnTrgt.label, cnxnTrgt.trgt )
-            reset {
-              for( msg <- node.subscribe( agentCnxnT )( forwardingLabel ) ) {
-                // we have to massage the compiler by doing this
-                val newConnectionList = lGSrcCnxns.diff(List(srcCnxn( cnxnTrgt )) )
+    reset {
 
-                for( cnxnS <- newConnectionList ) {
-                  val agentCnxnS =
-                    acT.AgentCnxn( cnxnS.src, cnxnS.label, cnxnS.trgt )
-                  node.publish( agentCnxnS )( forwardingLabel, msg )
+      for( lGCnxnsMsg <- node.get( agentCnxn )( lGCnxnsLabel ) ) {
+        rsrc2V[VenueMessage]( lGCnxnsMsg ) match { // connections label is going to be found through pattern matching on the cnxns
+          case Left( VenueCnxns( _, _, lGTrgtCnxns, lGSrcCnxns ) ) => {
+            for( cnxnTrgt <- lGTrgtCnxns ) {
+              // need to convert this to the type of connection required by the parameter
+              val agentCnxnT =
+                acT.AgentCnxn( cnxnTrgt.src, cnxnTrgt.label, cnxnTrgt.trgt )
+              reset {
+                for( msg <- node.subscribe( agentCnxnT )( forwardingLabel ) ) {
+                  // we have to massage the compiler by doing this
+                  val newConnectionList = lGSrcCnxns.diff(List(srcCnxn( cnxnTrgt )) )
+                  
+                  val collItr = newConnectionList.iterator
+                  while( collItr.hasNext ) {
+                    val cnxnS = collItr.next
+                    reset {
+                      node.publish(
+                        acT.AgentCnxn( cnxnS.src, cnxnS.label, cnxnS.trgt )
+                      )( forwardingLabel, msg )
+                    }
+                  };
+                  ()
                 }
               }
             }
           }
-        }
-        case Right( true ) => {
-          // There's no cnxns. We'll go to sleep until there are venue cnxns.
-        }
-        case _ => {
-          // We got an unexpected message.
+          case Right( true ) => {
+            // There's no cnxns. We'll go to sleep until there are venue cnxns.
+          }
+          case _ => {
+            // We got an unexpected message.
+          }
         }
       }
     }
